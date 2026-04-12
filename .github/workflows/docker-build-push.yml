@@ -17,7 +17,7 @@ on:
         type: string
         default: ""
         description: "Additional build args (newline-separated KEY=VALUE)"
-      push:
+      enable-push:
         type: boolean
         default: true
       needs-github-token-build-arg:
@@ -45,7 +45,7 @@ jobs:
       - name: Resolve push flag
         id: push-flag
         run: |
-          if [[ "${{ inputs.push }}" == "true" && "${{ github.ref }}" == "refs/heads/main" ]]; then
+          if [[ "${{ inputs.enable-push }}" == "true" && "${{ github.ref }}" == "refs/heads/main" ]]; then
             echo "push=true" >> "$GITHUB_OUTPUT"
           else
             echo "push=false" >> "$GITHUB_OUTPUT"
