@@ -100,6 +100,7 @@ jobs:
         run: |
           pip install -r requirements.txt
           if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
+          pip install pytest-timeout
 
       - name: Integration tests
         run: pytest tests/integration/ -v --timeout=120
