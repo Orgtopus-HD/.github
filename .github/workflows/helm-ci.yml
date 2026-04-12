@@ -1,0 +1,27 @@
+name: Helm CI
+
+on:
+  workflow_call:
+    inputs:
+      chart-path:
+        type: string
+        default: "."
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: azure/setup-helm@v4
+        with:
+          version: v3.14.0
+
+      - name: Update dependencies
+        run: helm dependency update ${{ inputs.chart-path }}
+
+      - name: Lint
+        run: helm lint ${{ inputs.chart-path }}
+
+      - name: Template validation
+        run: helm template orgtopus ${{ inputs.chart-path }} --debug > /dev/null

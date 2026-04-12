@@ -1,0 +1,74 @@
+name: Python Service CI
+
+on:
+  workflow_call:
+    inputs:
+      python-version:
+        type: string
+        default: "3.13"
+      coverage-threshold:
+        type: number
+        default: 60
+      needs-shared-lib:
+        type: boolean
+        default: true
+        description: "Whether to install orgtopus-shared from GitHub Packages"
+      needs-postgres:
+        type: boolean
+        default: true
+      source-dir:
+        type: string
+        default: "src"
+        description: "Directory to lint and check coverage against"
+
+jobs:
+  lint-test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: ${{ inputs.needs-postgres && 'postgres:16-alpine' || '' }}
+        env:
+          POSTGRES_PASSWORD: testpassword
+          POSTGRES_DB: orgtopus_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python-version }}
+          cache: pip
+
+      - name: Install orgtopus-shared
+        if: inputs.needs-shared-lib
+        run: |
+          pip install orgtopus-shared \
+            --extra-index-url https://__token__:${{ secrets.GITHUB_TOKEN }}@ghcr.io/orgtopus-hd/pypi/simple/
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
+          pip install ruff black
+
+      - name: Lint (ruff)
+        run: ruff check ${{ inputs.source-dir }}/
+
+      - name: Format check (black)
+        run: black --check ${{ inputs.source-dir }}/
+
+      - name: Test
+        run: |
+          pytest tests/ -v \
+            --cov=${{ inputs.source-dir }} \
+            --cov-report=term-missing \
+            --cov-fail-under=${{ inputs.coverage-threshold }}
+        env:
+          DATABASE_URL: postgresql+asyncpg://postgres:testpassword@localhost:5432/orgtopus_test
