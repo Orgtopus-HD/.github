@@ -24,6 +24,10 @@ on:
         type: string
         default: "src"
         description: "Directory to lint and check coverage against"
+      run-integration-tests:
+        type: boolean
+        default: false
+        description: "Whether to run integration tests from tests/integration/"
 
 jobs:
   lint-test-with-postgres:
@@ -75,6 +79,30 @@ jobs:
             --cov-fail-under=${{ inputs.coverage-threshold }}
         env:
           DATABASE_URL: postgresql+asyncpg://postgres:testpassword@localhost:5432/orgtopus_test
+
+  integration-test:
+    if: inputs.run-integration-tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python-version }}
+          cache: pip
+
+      - name: Install orgtopus-shared
+        if: inputs.needs-shared-lib
+        run: pip install "orgtopus-shared @ git+https://x-access-token:${SHARED_LIB_TOKEN}@github.com/Orgtopus-HD/orgtopus-shared.git@v0.1.0"
+        env:
+          SHARED_LIB_TOKEN: ${{ secrets.SHARED_LIB_TOKEN }}
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
+
+      - name: Integration tests
+        run: pytest tests/integration/ -v --timeout=120
 
   lint-test-no-postgres:
     if: ${{ !inputs.needs-postgres }}
