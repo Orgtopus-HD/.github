@@ -51,9 +51,9 @@ jobs:
       - name: Resolve build args
         id: build-args
         run: |
-          ARGS="${{ inputs.build-args }}"
-          if [[ "${{ inputs.needs-github-token-build-arg }}" == "true" ]]; then
-            ARGS="GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}"$'\n'"${ARGS}"
+          ARGS="GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}"
+          if [[ -n "${{ inputs.build-args }}" ]]; then
+            ARGS="${ARGS}"$'\n'"${{ inputs.build-args }}"
           fi
           {
             echo "args<<EOFARGS"
