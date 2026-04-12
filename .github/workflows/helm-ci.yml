@@ -24,4 +24,8 @@ jobs:
         run: helm lint ${{ inputs.chart-path }}
 
       - name: Template validation
-        run: helm template orgtopus ${{ inputs.chart-path }} --debug > /dev/null
+        run: |
+          helm template orgtopus ${{ inputs.chart-path }} --debug \
+            --set postgresql.auth.password=ci-dummy \
+            --set postgresql.auth.existingSecret="" \
+            > /dev/null
