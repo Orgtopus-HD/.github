@@ -2,6 +2,10 @@ name: Docker Build & Push
 
 on:
   workflow_call:
+    secrets:
+      SHARED_LIB_TOKEN:
+        required: false
+        description: "PAT for cloning orgtopus-shared in Docker builds (org-level secret)"
     inputs:
       image-name:
         type: string
