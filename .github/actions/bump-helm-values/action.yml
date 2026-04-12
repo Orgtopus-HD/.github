@@ -1,0 +1,98 @@
+name: Bump helm values
+description: >
+  Update a tag under a given values.yaml key in Orgtopus-HD/helm-charts and
+  push the change directly to master. Shared by the reusable release workflow
+  and by repos that need to bump the chart from their own jobs (e.g. mcp-servers
+  after its matrix build).
+
+inputs:
+  helm-values-key:
+    description: "Dot-path to the tag to update, e.g. 'orgApi.image.tag' or 'mcpImages.tag'"
+    required: true
+  version:
+    description: "New tag value (no leading 'v')"
+    required: true
+  image-name:
+    description: "Display name used in the commit message"
+    required: true
+  helm-bump-token:
+    description: "PAT with contents:write access to the helm-charts repo"
+    required: true
+  git-user-name:
+    description: "Git committer name"
+    required: false
+    default: "orgtopus-release-bot"
+  git-user-email:
+    description: "Git committer email"
+    required: false
+    default: "release-bot@orgtopus.ai"
+
+runs:
+  using: composite
+  steps:
+    - name: Clone helm-charts, bump tag, push to master
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.helm-bump-token }}
+        VERSION: ${{ inputs.version }}
+        HELM_KEY: ${{ inputs.helm-values-key }}
+        IMAGE_NAME: ${{ inputs.image-name }}
+        GIT_USER_NAME: ${{ inputs.git-user-name }}
+        GIT_USER_EMAIL: ${{ inputs.git-user-email }}
+      run: |
+        set -euo pipefail
+        git clone "https://x-access-token:${GH_TOKEN}@github.com/Orgtopus-HD/helm-charts.git" /tmp/helm-charts
+        cd /tmp/helm-charts
+
+        python3 - <<'PY'
+        import os
+
+        key_path = os.environ["HELM_KEY"]
+        version = os.environ["VERSION"]
+        parts = key_path.split(".")
+
+        with open("values.yaml", "r") as f:
+            lines = f.readlines()
+
+        found_section = False
+        section_indent = -1
+        updated = False
+
+        for i, line in enumerate(lines):
+            stripped = line.lstrip()
+            indent = len(line) - len(stripped)
+
+            # Match top-level key (e.g. 'orgApi:')
+            if not found_section and stripped.startswith(parts[0] + ":"):
+                found_section = True
+                section_indent = indent
+                continue
+
+            if found_section:
+                # Left the section if we return to same-or-shallower indent
+                if stripped and not stripped.startswith("#") and indent <= section_indent:
+                    break
+                if stripped.startswith("tag:"):
+                    lines[i] = line[:indent] + f'tag: "{version}"\n'
+                    updated = True
+                    break
+
+        if not updated:
+            raise SystemExit(f"Could not find tag under key '{key_path}' in values.yaml")
+
+        with open("values.yaml", "w") as f:
+            f.writelines(lines)
+        PY
+
+        git config user.name  "${GIT_USER_NAME}"
+        git config user.email "${GIT_USER_EMAIL}"
+        git add values.yaml
+
+        # No-op guard: skip empty commits if the tag already matches
+        if git diff --staged --quiet; then
+          echo "values.yaml already at ${IMAGE_NAME}=${VERSION}; nothing to commit."
+          exit 0
+        fi
+
+        git commit -m "Bump ${IMAGE_NAME} to ${VERSION}"
+        git push origin master

@@ -69,66 +69,10 @@ jobs:
           tag_name: ${{ steps.version.outputs.tag }}
           generate_release_notes: true
 
-      # Bump version in helm-charts values.yaml
       - name: Bump helm chart version
-        env:
-          GH_TOKEN: ${{ secrets.HELM_BUMP_TOKEN }}
-          VERSION: ${{ steps.version.outputs.version }}
-          HELM_KEY: ${{ inputs.helm-values-key }}
-          IMAGE_NAME: ${{ inputs.image-name }}
-        run: |
-          # Clone helm-charts
-          git clone "https://x-access-token:${GH_TOKEN}@github.com/Orgtopus-HD/helm-charts.git" /tmp/helm-charts
-          cd /tmp/helm-charts
-
-          # Update the tag in values.yaml
-          # Convert dot-path like "orgApi.image.tag" to sed pattern
-          # We need to find the line with "tag:" under the right section
-          python3 -c "
-          import re, sys
-
-          key_path = '${HELM_KEY}'
-          version = '${VERSION}'
-
-          parts = key_path.split('.')
-          # parts = ['orgApi', 'image', 'tag']
-
-          with open('values.yaml', 'r') as f:
-              lines = f.readlines()
-
-          # Find the section and update the tag
-          section_depth = 0
-          found_section = False
-          section_indent = -1
-
-          for i, line in enumerate(lines):
-              stripped = line.lstrip()
-              indent = len(line) - len(stripped)
-
-              # Match top-level key (e.g., 'orgApi:')
-              if not found_section and stripped.startswith(parts[0] + ':'):
-                  found_section = True
-                  section_indent = indent
-                  continue
-
-              if found_section:
-                  # If we've gone back to the same or lower indent, we left the section
-                  if stripped and not stripped.startswith('#') and indent <= section_indent:
-                      break
-
-                  # Look for 'tag:' line within the section
-                  if stripped.startswith('tag:'):
-                      # Replace the tag value
-                      lines[i] = line[:indent] + 'tag: \"' + version + '\"\n'
-                      break
-
-          with open('values.yaml', 'w') as f:
-              f.writelines(lines)
-          "
-
-          # Commit and push directly to master (no PR)
-          git config user.name "orgtopus-release-bot"
-          git config user.email "release-bot@orgtopus.ai"
-          git add values.yaml
-          git commit -m "Bump ${IMAGE_NAME} to ${VERSION}"
-          git push origin master
+        uses: Orgtopus-HD/.github/.github/actions/bump-helm-values@master
+        with:
+          helm-values-key: ${{ inputs.helm-values-key }}
+          version: ${{ steps.version.outputs.version }}
+          image-name: ${{ inputs.image-name }}
+          helm-bump-token: ${{ secrets.HELM_BUMP_TOKEN }}
