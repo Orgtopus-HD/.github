@@ -46,7 +46,7 @@ jobs:
       - name: Resolve push flag
         id: push-flag
         run: |
-          if [[ "${{ inputs.push }}" == "true" && "${{ github.ref }}" == "refs/heads/main" ]]; then
+          if [[ "${{ inputs.push }}" == "true" && "${{ github.ref }}" == "refs/heads/master" ]]; then
             echo "push=true" >> "$GITHUB_OUTPUT"
           else
             echo "push=false" >> "$GITHUB_OUTPUT"
