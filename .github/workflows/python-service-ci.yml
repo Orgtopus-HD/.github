@@ -47,9 +47,9 @@ jobs:
 
       - name: Install orgtopus-shared
         if: inputs.needs-shared-lib
-        run: pip install "orgtopus-shared @ git+https://x-access-token:${GITHUB_TOKEN}@github.com/Orgtopus-HD/orgtopus-shared.git@v0.1.0"
+        run: pip install "orgtopus-shared @ git+https://x-access-token:${SHARED_LIB_TOKEN}@github.com/Orgtopus-HD/orgtopus-shared.git@v0.1.0"
         env:
-          GITHUB_TOKEN: ${{ github.token }}
+          SHARED_LIB_TOKEN: ${{ secrets.SHARED_LIB_TOKEN }}
 
       - name: Install dependencies
         run: |
@@ -84,9 +84,9 @@ jobs:
 
       - name: Install orgtopus-shared
         if: inputs.needs-shared-lib
-        run: pip install "orgtopus-shared @ git+https://x-access-token:${GITHUB_TOKEN}@github.com/Orgtopus-HD/orgtopus-shared.git@v0.1.0"
+        run: pip install "orgtopus-shared @ git+https://x-access-token:${SHARED_LIB_TOKEN}@github.com/Orgtopus-HD/orgtopus-shared.git@v0.1.0"
         env:
-          GITHUB_TOKEN: ${{ github.token }}
+          SHARED_LIB_TOKEN: ${{ secrets.SHARED_LIB_TOKEN }}
 
       - name: Install dependencies
         run: |

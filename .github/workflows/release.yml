@@ -54,6 +54,8 @@ jobs:
           context: ${{ inputs.context }}
           file: ${{ inputs.dockerfile }}
           push: true
+          build-args: |
+            GITHUB_TOKEN=${{ secrets.SHARED_LIB_TOKEN || secrets.HELM_BUMP_TOKEN }}
           tags: |
             ghcr.io/orgtopus-hd/${{ inputs.image-name }}:${{ steps.version.outputs.version }}
             ghcr.io/orgtopus-hd/${{ inputs.image-name }}:latest

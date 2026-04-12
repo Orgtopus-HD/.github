@@ -51,7 +51,7 @@ jobs:
       - name: Resolve build args
         id: build-args
         run: |
-          ARGS="GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}"
+          ARGS="GITHUB_TOKEN=${{ secrets.SHARED_LIB_TOKEN || secrets.GITHUB_TOKEN }}"
           if [[ -n "${{ inputs.build-args }}" ]]; then
             ARGS="${ARGS}"$'\n'"${{ inputs.build-args }}"
           fi
