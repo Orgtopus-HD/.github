@@ -28,4 +28,6 @@ jobs:
           helm template orgtopus ${{ inputs.chart-path }} --debug \
             --set postgresql.auth.password=ci-dummy \
             --set postgresql.auth.existingSecret="" \
+            --set litellmProxy.masterKey=ci-dummy \
+            --set litellmProxy.anthropicApiKey=ci-dummy \
             > /dev/null
