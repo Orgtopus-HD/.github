@@ -14,6 +14,10 @@ on:
         type: boolean
         default: false
         description: "Run Playwright E2E tests (requires backend services)"
+      run-e2e-fast:
+        type: boolean
+        default: false
+        description: "Run fast Playwright E2E tests (no backend needed)"
 
 jobs:
   lint-test:
@@ -49,3 +53,17 @@ jobs:
       - run: npx playwright install --with-deps
       - name: E2E Tests
         run: npm run test:e2e
+
+  e2e-fast:
+    if: inputs.run-e2e-fast
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Fast E2E Tests
+        run: npm run test:e2e:fast
