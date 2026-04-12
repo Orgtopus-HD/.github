@@ -1,0 +1,53 @@
+name: Go E2E CI
+
+on:
+  workflow_call:
+    secrets:
+      SHARED_LIB_TOKEN:
+        required: false
+    inputs:
+      go-version:
+        type: string
+        default: "1.23"
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ inputs.go-version }}
+
+      - name: Install Kind
+        run: |
+          curl -Lo ./kind https://kind.sigs.k8s.io/dl/latest/kind-linux-amd64
+          chmod +x ./kind
+          sudo mv ./kind /usr/local/bin/kind
+
+      - name: Create Kind cluster
+        run: kind create cluster --wait 120s
+
+      - name: Build operator image
+        run: make docker-build IMG=orgtopus-operator:ci
+
+      - name: Load image into Kind
+        run: kind load docker-image orgtopus-operator:ci
+
+      - name: Install CRDs
+        run: make install
+
+      - name: Deploy operator
+        run: make deploy IMG=orgtopus-operator:ci
+
+      - name: Wait for operator readiness
+        run: |
+          kubectl -n orgtopus-operator-system wait --for=condition=available \
+            deployment/orgtopus-operator-controller-manager --timeout=120s
+
+      - name: Run E2E tests
+        run: make test-e2e
+
+      - name: Cleanup Kind cluster
+        if: always()
+        run: kind delete cluster
