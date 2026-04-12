@@ -2,6 +2,10 @@ name: Node CI
 
 on:
   workflow_call:
+    secrets:
+      SHARED_LIB_TOKEN:
+        required: false
+        description: "PAT for cross-repo access (unused by Node CI but accepted for caller consistency)"
     inputs:
       node-version:
         type: string

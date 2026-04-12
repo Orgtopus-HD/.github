@@ -2,6 +2,9 @@ name: Helm CI
 
 on:
   workflow_call:
+    secrets:
+      SHARED_LIB_TOKEN:
+        required: false
     inputs:
       chart-path:
         type: string
