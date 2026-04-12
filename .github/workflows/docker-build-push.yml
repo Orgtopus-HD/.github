@@ -6,10 +6,73 @@ on:
       image-name:
         type: string
         required: true
+        description: "Image name without registry prefix (e.g. 'chat-api')"
+      context:
+        type: string
+        default: "."
+      dockerfile:
+        type: string
+        default: "Dockerfile"
+      build-args:
+        type: string
+        default: ""
+        description: "Additional build args (newline-separated KEY=VALUE)"
+      push:
+        type: boolean
+        default: true
+      needs-github-token-build-arg:
+        type: boolean
+        default: false
+        description: "Pass GITHUB_TOKEN as Docker build arg (for private PyPI)"
 
 jobs:
   build-push:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     steps:
       - uses: actions/checkout@v4
-      - run: echo "Building ${{ inputs.image-name }}"
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Resolve push flag
+        id: push-flag
+        run: |
+          if [[ "${{ inputs.push }}" == "true" && "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "push=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "push=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Resolve build args
+        id: build-args
+        run: |
+          ARGS="${{ inputs.build-args }}"
+          if [[ "${{ inputs.needs-github-token-build-arg }}" == "true" ]]; then
+            ARGS="GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}"$'\n'"${ARGS}"
+          fi
+          {
+            echo "args<<EOFARGS"
+            echo "$ARGS"
+            echo "EOFARGS"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ inputs.context }}
+          file: ${{ inputs.dockerfile }}
+          push: ${{ steps.push-flag.outputs.push }}
+          build-args: ${{ steps.build-args.outputs.args }}
+          tags: |
+            ghcr.io/orgtopus-hd/${{ inputs.image-name }}:${{ github.sha }}
+            ghcr.io/orgtopus-hd/${{ inputs.image-name }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
