@@ -17,13 +17,13 @@ on:
       context:
         type: string
         default: "."
-    # NOTE: we intentionally do not declare required secrets here. Callers
-    # pass secrets via `secrets: inherit` and the org-level secrets
-    # HELM_BUMP_TOKEN / SHARED_LIB_TOKEN flow through. Declaring
-    # `required: true` on a secret blocks workflow startup with
-    # `startup_failure` (no logs) when inherit resolves an unset value,
-    # which is misleading. Missing secrets will fail at the step that
-    # actually uses them, with a normal (debuggable) error.
+    secrets:
+      HELM_BUMP_TOKEN:
+        required: false
+        description: "PAT with contents:write on helm-charts (for the bump step)"
+      SHARED_LIB_TOKEN:
+        required: false
+        description: "PAT to install orgtopus-shared during docker build (Python services)"
 
 jobs:
   release:
