@@ -1,9 +1,12 @@
 name: Bump helm values
 description: >
-  Update a tag under a given values.yaml key in Orgtopus-HD/helm-charts and
-  push the change directly to master. Shared by the reusable release workflow
-  and by repos that need to bump the chart from their own jobs (e.g. mcp-servers
-  after its matrix build).
+  Open a PR in Orgtopus-HD/orgtopus-gitops that bumps a tag under a given
+  values.yaml key in environments/prod/orgtopus/values.yaml. Shared by the
+  reusable release workflow and by repos that need to bump the prod chart
+  from their own jobs (e.g. mcp-servers after its matrix build).
+
+  Dev tracks `latest` via Argo CD Image Updater, so release-time bumps only
+  target prod. Merging the generated PR triggers ArgoCD to sync the prod cluster.
 
 inputs:
   helm-values-key:
@@ -13,10 +16,10 @@ inputs:
     description: "New tag value (no leading 'v')"
     required: true
   image-name:
-    description: "Display name used in the commit message"
+    description: "Display name used in the commit message and PR title"
     required: true
   helm-bump-token:
-    description: "PAT with contents:write access to the helm-charts repo"
+    description: "PAT with contents:write and pull-requests:write on orgtopus-gitops"
     required: true
   git-user-name:
     description: "Git committer name"
@@ -30,7 +33,7 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Clone helm-charts, bump tag, push to master
+    - name: Clone orgtopus-gitops, bump prod tag, open PR
       shell: bash
       env:
         GH_TOKEN: ${{ inputs.helm-bump-token }}
@@ -39,19 +42,21 @@ runs:
         IMAGE_NAME: ${{ inputs.image-name }}
         GIT_USER_NAME: ${{ inputs.git-user-name }}
         GIT_USER_EMAIL: ${{ inputs.git-user-email }}
+        VALUES_FILE: environments/prod/orgtopus/values.yaml
       run: |
         set -euo pipefail
-        git clone "https://x-access-token:${GH_TOKEN}@github.com/Orgtopus-HD/helm-charts.git" /tmp/helm-charts
-        cd /tmp/helm-charts
+        git clone "https://x-access-token:${GH_TOKEN}@github.com/Orgtopus-HD/orgtopus-gitops.git" /tmp/gitops
+        cd /tmp/gitops
 
         python3 - <<'PY'
         import os
 
         key_path = os.environ["HELM_KEY"]
         version = os.environ["VERSION"]
+        values_file = os.environ["VALUES_FILE"]
         parts = key_path.split(".")
 
-        with open("values.yaml", "r") as f:
+        with open(values_file, "r") as f:
             lines = f.readlines()
 
         found_section = False
@@ -78,21 +83,31 @@ runs:
                     break
 
         if not updated:
-            raise SystemExit(f"Could not find tag under key '{key_path}' in values.yaml")
+            raise SystemExit(f"Could not find tag under key '{key_path}' in {values_file}")
 
-        with open("values.yaml", "w") as f:
+        with open(values_file, "w") as f:
             f.writelines(lines)
         PY
 
         git config user.name  "${GIT_USER_NAME}"
         git config user.email "${GIT_USER_EMAIL}"
-        git add values.yaml
 
-        # No-op guard: skip empty commits if the tag already matches
+        BRANCH="bump/prod-${IMAGE_NAME}-${VERSION}"
+        git checkout -b "${BRANCH}"
+        git add "${VALUES_FILE}"
+
+        # No-op guard: skip if prod tag already matches
         if git diff --staged --quiet; then
-          echo "values.yaml already at ${IMAGE_NAME}=${VERSION}; nothing to commit."
+          echo "${VALUES_FILE} already at ${IMAGE_NAME}=${VERSION}; nothing to commit."
           exit 0
         fi
 
-        git commit -m "Bump ${IMAGE_NAME} to ${VERSION}"
-        git push origin master
+        git commit -m "Bump ${IMAGE_NAME} to ${VERSION} (prod)"
+        git push -u origin "${BRANCH}"
+
+        gh pr create \
+          --repo Orgtopus-HD/orgtopus-gitops \
+          --head "${BRANCH}" \
+          --base master \
+          --title "Bump ${IMAGE_NAME} to ${VERSION} (prod)" \
+          --body "Promote ${IMAGE_NAME} v${VERSION} to production. Merging this PR will trigger ArgoCD to sync the prod cluster."
