@@ -32,6 +32,8 @@ on:
 jobs:
   build-push:
     runs-on: self-hosted
+    env:
+      DOCKER_CONFIG: ${{ runner.temp }}/.docker
     steps:
       - uses: actions/checkout@v4
 

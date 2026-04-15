@@ -31,6 +31,8 @@ jobs:
     permissions:
       contents: write
       packages: write
+    env:
+      DOCKER_CONFIG: ${{ runner.temp }}/.docker
     steps:
       - uses: actions/checkout@v4
 
