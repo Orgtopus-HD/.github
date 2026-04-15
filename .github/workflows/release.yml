@@ -31,10 +31,11 @@ jobs:
     permissions:
       contents: write
       packages: write
-    env:
-      DOCKER_CONFIG: ${{ runner.temp }}/.docker
     steps:
       - uses: actions/checkout@v4
+
+      - name: Isolate docker config
+        run: echo "DOCKER_CONFIG=$RUNNER_TEMP/.docker" >> "$GITHUB_ENV"
 
       - name: Extract version from tag
         id: version
