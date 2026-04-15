@@ -47,6 +47,10 @@ jobs:
       - uses: docker/setup-qemu-action@v3
 
       - uses: docker/setup-buildx-action@v3
+        with:
+          buildkitd-config-inline: |
+            [registry."docker.io"]
+              mirrors = ["mirror.gcr.io"]
 
       - name: Resolve push flag
         id: push-flag
