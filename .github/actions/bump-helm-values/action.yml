@@ -45,8 +45,10 @@ runs:
         VALUES_FILE: environments/prod/orgtopus/values.yaml
       run: |
         set -euo pipefail
-        git clone "https://x-access-token:${GH_TOKEN}@github.com/Orgtopus-HD/orgtopus-gitops.git" /tmp/gitops
-        cd /tmp/gitops
+        WORKDIR="$(mktemp -d -t gitops.XXXXXX)"
+        trap 'rm -rf "$WORKDIR"' EXIT
+        git clone "https://x-access-token:${GH_TOKEN}@github.com/Orgtopus-HD/orgtopus-gitops.git" "$WORKDIR"
+        cd "$WORKDIR"
 
         python3 - <<'PY'
         import os
