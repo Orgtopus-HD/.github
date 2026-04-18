@@ -36,6 +36,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Set up virtualenv
+        run: |
+          python3.13 -m venv .venv
+          echo "$GITHUB_WORKSPACE/.venv/bin" >> $GITHUB_PATH
+
       - name: Start postgres
         run: |
           docker rm -f postgres-test 2>/dev/null || true
@@ -48,25 +53,25 @@ jobs:
 
       - name: Install orgtopus-shared
         if: inputs.needs-shared-lib
-        run: python3.13 -m pip install --break-system-packages "orgtopus-shared @ git+https://x-access-token:${SHARED_LIB_TOKEN}@github.com/Orgtopus-HD/orgtopus-shared.git@v0.1.0"
+        run: pip install "orgtopus-shared @ git+https://x-access-token:${SHARED_LIB_TOKEN}@github.com/Orgtopus-HD/orgtopus-shared.git@v0.1.0"
         env:
           SHARED_LIB_TOKEN: ${{ secrets.SHARED_LIB_TOKEN }}
 
       - name: Install dependencies
         run: |
-          python3.13 -m pip install --break-system-packages -r requirements.txt
-          if [ -f requirements-dev.txt ]; then python3.13 -m pip install --break-system-packages -r requirements-dev.txt; fi
-          python3.13 -m pip install --break-system-packages ruff black
+          pip install -r requirements.txt
+          if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
+          pip install ruff black
 
       - name: Lint (ruff)
-        run: python3.13 -m ruff check ${{ inputs.source-dir }}/
+        run: ruff check ${{ inputs.source-dir }}/
 
       - name: Format check (black)
-        run: python3.13 -m black --check ${{ inputs.source-dir }}/
+        run: black --check ${{ inputs.source-dir }}/
 
       - name: Test
         run: |
-          python3.13 -m pytest tests/ -v \
+          pytest tests/ -v \
             --cov=${{ inputs.source-dir }} \
             --cov-report=term-missing \
             --cov-fail-under=${{ inputs.coverage-threshold }}
@@ -83,20 +88,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Set up virtualenv
+        run: |
+          python3.13 -m venv .venv
+          echo "$GITHUB_WORKSPACE/.venv/bin" >> $GITHUB_PATH
+
       - name: Install orgtopus-shared
         if: inputs.needs-shared-lib
-        run: python3.13 -m pip install --break-system-packages "orgtopus-shared @ git+https://x-access-token:${SHARED_LIB_TOKEN}@github.com/Orgtopus-HD/orgtopus-shared.git@v0.1.0"
+        run: pip install "orgtopus-shared @ git+https://x-access-token:${SHARED_LIB_TOKEN}@github.com/Orgtopus-HD/orgtopus-shared.git@v0.1.0"
         env:
           SHARED_LIB_TOKEN: ${{ secrets.SHARED_LIB_TOKEN }}
 
       - name: Install dependencies
         run: |
-          python3.13 -m pip install --break-system-packages -r requirements.txt
-          if [ -f requirements-dev.txt ]; then python3.13 -m pip install --break-system-packages -r requirements-dev.txt; fi
-          python3.13 -m pip install --break-system-packages pytest-timeout
+          pip install -r requirements.txt
+          if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
+          pip install pytest-timeout
 
       - name: Integration tests
-        run: python3.13 -m pytest tests/integration/ -v --timeout=120
+        run: pytest tests/integration/ -v --timeout=120
 
   lint-test-no-postgres:
     if: ${{ !inputs.needs-postgres }}
@@ -104,27 +114,32 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Set up virtualenv
+        run: |
+          python3.13 -m venv .venv
+          echo "$GITHUB_WORKSPACE/.venv/bin" >> $GITHUB_PATH
+
       - name: Install orgtopus-shared
         if: inputs.needs-shared-lib
-        run: python3.13 -m pip install --break-system-packages "orgtopus-shared @ git+https://x-access-token:${SHARED_LIB_TOKEN}@github.com/Orgtopus-HD/orgtopus-shared.git@v0.1.0"
+        run: pip install "orgtopus-shared @ git+https://x-access-token:${SHARED_LIB_TOKEN}@github.com/Orgtopus-HD/orgtopus-shared.git@v0.1.0"
         env:
           SHARED_LIB_TOKEN: ${{ secrets.SHARED_LIB_TOKEN }}
 
       - name: Install dependencies
         run: |
-          python3.13 -m pip install --break-system-packages -r requirements.txt
-          if [ -f requirements-dev.txt ]; then python3.13 -m pip install --break-system-packages -r requirements-dev.txt; fi
-          python3.13 -m pip install --break-system-packages ruff black
+          pip install -r requirements.txt
+          if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
+          pip install ruff black
 
       - name: Lint (ruff)
-        run: python3.13 -m ruff check ${{ inputs.source-dir }}/
+        run: ruff check ${{ inputs.source-dir }}/
 
       - name: Format check (black)
-        run: python3.13 -m black --check ${{ inputs.source-dir }}/
+        run: black --check ${{ inputs.source-dir }}/
 
       - name: Test
         run: |
-          python3.13 -m pytest tests/ -v \
+          pytest tests/ -v \
             --cov=${{ inputs.source-dir }} \
             --cov-report=term-missing \
             --cov-fail-under=${{ inputs.coverage-threshold }}
