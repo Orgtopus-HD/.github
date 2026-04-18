@@ -33,25 +33,22 @@ jobs:
   lint-test-with-postgres:
     if: inputs.needs-postgres
     runs-on: self-hosted
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_PASSWORD: testpassword
-          POSTGRES_DB: orgtopus_test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 5s
-          --health-timeout 3s
-          --health-retries 5
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ inputs.python-version }}
           cache: pip
+
+      - name: Start postgres
+        run: |
+          docker rm -f postgres-test 2>/dev/null || true
+          docker run -d --name postgres-test \
+            -e POSTGRES_PASSWORD=testpassword \
+            -e POSTGRES_DB=orgtopus_test \
+            -p 5432:5432 \
+            postgres:16-alpine
+          until docker exec postgres-test pg_isready -U postgres; do sleep 1; done
 
       - name: Install orgtopus-shared
         if: inputs.needs-shared-lib
@@ -79,6 +76,10 @@ jobs:
             --cov-fail-under=${{ inputs.coverage-threshold }}
         env:
           DATABASE_URL: postgresql+asyncpg://postgres:testpassword@localhost:5432/orgtopus_test
+
+      - name: Stop postgres
+        if: always()
+        run: docker rm -f postgres-test 2>/dev/null || true
 
   integration-test:
     if: inputs.run-integration-tests
