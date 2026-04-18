@@ -48,25 +48,25 @@ jobs:
 
       - name: Install orgtopus-shared
         if: inputs.needs-shared-lib
-        run: pip install "orgtopus-shared @ git+https://x-access-token:${SHARED_LIB_TOKEN}@github.com/Orgtopus-HD/orgtopus-shared.git@v0.1.0"
+        run: python3.13 -m pip install "orgtopus-shared @ git+https://x-access-token:${SHARED_LIB_TOKEN}@github.com/Orgtopus-HD/orgtopus-shared.git@v0.1.0"
         env:
           SHARED_LIB_TOKEN: ${{ secrets.SHARED_LIB_TOKEN }}
 
       - name: Install dependencies
         run: |
-          pip install -r requirements.txt
-          if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
-          pip install ruff black
+          python3.13 -m pip install -r requirements.txt
+          if [ -f requirements-dev.txt ]; then python3.13 -m pip install -r requirements-dev.txt; fi
+          python3.13 -m pip install ruff black
 
       - name: Lint (ruff)
-        run: ruff check ${{ inputs.source-dir }}/
+        run: python3.13 -m ruff check ${{ inputs.source-dir }}/
 
       - name: Format check (black)
-        run: black --check ${{ inputs.source-dir }}/
+        run: python3.13 -m black --check ${{ inputs.source-dir }}/
 
       - name: Test
         run: |
-          pytest tests/ -v \
+          python3.13 -m pytest tests/ -v \
             --cov=${{ inputs.source-dir }} \
             --cov-report=term-missing \
             --cov-fail-under=${{ inputs.coverage-threshold }}
@@ -85,18 +85,18 @@ jobs:
 
       - name: Install orgtopus-shared
         if: inputs.needs-shared-lib
-        run: pip install "orgtopus-shared @ git+https://x-access-token:${SHARED_LIB_TOKEN}@github.com/Orgtopus-HD/orgtopus-shared.git@v0.1.0"
+        run: python3.13 -m pip install "orgtopus-shared @ git+https://x-access-token:${SHARED_LIB_TOKEN}@github.com/Orgtopus-HD/orgtopus-shared.git@v0.1.0"
         env:
           SHARED_LIB_TOKEN: ${{ secrets.SHARED_LIB_TOKEN }}
 
       - name: Install dependencies
         run: |
-          pip install -r requirements.txt
-          if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
-          pip install pytest-timeout
+          python3.13 -m pip install -r requirements.txt
+          if [ -f requirements-dev.txt ]; then python3.13 -m pip install -r requirements-dev.txt; fi
+          python3.13 -m pip install pytest-timeout
 
       - name: Integration tests
-        run: pytest tests/integration/ -v --timeout=120
+        run: python3.13 -m pytest tests/integration/ -v --timeout=120
 
   lint-test-no-postgres:
     if: ${{ !inputs.needs-postgres }}
@@ -106,25 +106,25 @@ jobs:
 
       - name: Install orgtopus-shared
         if: inputs.needs-shared-lib
-        run: pip install "orgtopus-shared @ git+https://x-access-token:${SHARED_LIB_TOKEN}@github.com/Orgtopus-HD/orgtopus-shared.git@v0.1.0"
+        run: python3.13 -m pip install "orgtopus-shared @ git+https://x-access-token:${SHARED_LIB_TOKEN}@github.com/Orgtopus-HD/orgtopus-shared.git@v0.1.0"
         env:
           SHARED_LIB_TOKEN: ${{ secrets.SHARED_LIB_TOKEN }}
 
       - name: Install dependencies
         run: |
-          pip install -r requirements.txt
-          if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
-          pip install ruff black
+          python3.13 -m pip install -r requirements.txt
+          if [ -f requirements-dev.txt ]; then python3.13 -m pip install -r requirements-dev.txt; fi
+          python3.13 -m pip install ruff black
 
       - name: Lint (ruff)
-        run: ruff check ${{ inputs.source-dir }}/
+        run: python3.13 -m ruff check ${{ inputs.source-dir }}/
 
       - name: Format check (black)
-        run: black --check ${{ inputs.source-dir }}/
+        run: python3.13 -m black --check ${{ inputs.source-dir }}/
 
       - name: Test
         run: |
-          pytest tests/ -v \
+          python3.13 -m pytest tests/ -v \
             --cov=${{ inputs.source-dir }} \
             --cov-report=term-missing \
             --cov-fail-under=${{ inputs.coverage-threshold }}
